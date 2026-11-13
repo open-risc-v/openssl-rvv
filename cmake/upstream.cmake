@@ -2,15 +2,19 @@
 # 探针链接 libcrypto 静态库。A/B 各自独立前缀 → 各自独立的汇编/SIMD 实现。
 
 set(PKG_ROOT "${CMAKE_BINARY_DIR}/pkg")
-set(PKG_PREFIX "${PKG_ROOT}/prefix")
-
-add_custom_target(pkg ALL
+if(NOT DEFINED PKG_PREFIX)
+  set(PKG_PREFIX "${PKG_ROOT}/prefix")
+  add_custom_target(pkg ALL
   COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/cmake/pkg-build.sh" "${SRC_DIR}" "${PKG_ROOT}"
   COMMENT "构建上游 openssl（${SRC_DIR}，静态）"
   VERBATIM)
+  set(HAVE_PKG_TARGET TRUE)
+endif()
 
 add_executable(ossl_harness test/pkg_ossl.c)
-add_dependencies(ossl_harness pkg)
+if(HAVE_PKG_TARGET)
+  add_dependencies(ossl_harness pkg)
+endif()
 target_include_directories(ossl_harness PRIVATE "${PKG_PREFIX}/include")
 target_link_directories(ossl_harness PRIVATE "${PKG_PREFIX}/lib")
 target_link_libraries(ossl_harness PRIVATE crypto pthread)
